@@ -1,0 +1,95 @@
+---
+title: "README"
+author: "Group 2"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Early-Stage Diabetes Risk Prediction Analysis
+
+## Group 2
+
+### Group Details
+
+Group Leader: Yon Hui Yi 20022992
+
+Group Members:\
+1. Siti Sarah binti Mohd Azman 16100349\
+2. Michelle Lee Yee Lin 22113922\
+3. Adriel Soon Wei Chen 23065535\
+4. Janice Beh Jing Ni 23064785
+
+\
+
+## README.md
+
+The description of the dataset with the data structure and data
+dictionary for the research project.
+
+\
+
+### Data Description
+
+This dataset contains essential information on vital signs and symptoms
+of individuals showing early signs of diabetes or those at risk of
+developing diabetes. The variables in the dataset offer valuable
+information about potential indicators of diabetes onset. It covers a
+wide range of data, including demographic details and specific symptoms
+associated with diabetes.
+
+\
+
+### Data Source
+
+The research data was sourced from Kaggle, by the author
+[ZJ](https://www.kaggle.com/datasets/tanshihjen/early-stage-diabetes-risk-prediction/data)
+in November 2023
+
+| **Observations** | **Variables** |
+|:-----------------|:--------------|
+| 520              | 17            |
+
+\
+
+## Data Dictionary
+
+#### Research Data
+
+All variables in the research dataset.
+
+```{r}
+library(kableExtra)
+
+# Create the data dictionary
+data_dict <- data.frame(
+  Variables = c("Age", "Gender", "Polyuria", "Polydipsia", "Sudden Weight Loss", "Weakness", "Polyphagia", "Genital Thrush", "Visual Blurring", "Itching", "Irritability", "Delayed Healing", "Partial Paresis", "Muscle Stiffness", "Alopecia", "Obesity", "Class"),
+ 
+   Description = c("Age range of the individuals.",
+                  "Gender information.",
+                  "Presence of excessive urination.",
+                  "Excessive thirst.",
+                  "Abrupt weight loss.",
+                  "Generalized weakness.",
+                  "Excessive hunger.",
+                  "Presence of genital thrush.",
+                  "Blurring of vision.",
+                  "Presence of itching.",
+                  "Display of irritability.",
+                  "Delayed wound healing.",
+                  "Partial loss of voluntary movement.",
+                  "Presence of muscle stiffness.",
+                  "Hair loss.",
+                  "Presence of obesity.",
+                  "Diabetes classification.")
+)
+
+# Print the data dictionary using kable
+kable(data_dict, "html") %>%
+  kable_styling()
+```

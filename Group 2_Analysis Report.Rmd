@@ -1,0 +1,358 @@
+---
+title: "Analysis"
+output:
+  pdf_document: default
+  html_document: default
+date: "Group 2"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Group Details
+
+Group Leader: Yon Hui Yi 20022992
+
+Group Members:\
+1. Siti Sarah binti Mohd Azman 16100349\
+2. Michelle Lee Yee Lin 22113922\
+3. Adriel Soon Wei Chen 23065535\
+4. Janice Beh Jing Ni 23064785
+
+## Part 1. Research Question and Modelling Objective
+
+### Research Question
+
+The research question centers on enhancing diabetes detection through a data-driven approach, specifically focusing on two key inquiries:
+
+1.  Accurate Prediction of Diabetes Risk:
+
+-   Research Question: Can we accurately predict an individual's likelihood of developing diabetes based on the presence of symptoms?
+-   Objective: The primary goal is to assess the effectiveness of a logistic regression model in predicting diabetes risk.
+
+2.  Identification of Influential Predictors:
+
+-   Research Question: Which individual symptoms or demographic factors exert the most significant influence on the onset of diabetes?
+-   Objective: The focus is on understanding and pinpointing the most influential predictors by leveraging logistic regression coefficients and associated p-values.
+
+### Modelling Objectives
+
+1.  Prediction: Develop a reliable logistic regression model to predict diabetes risk based on symptoms, facilitating early intervention and resource optimization.
+
+2.  Inference: Identify the most influential symptoms or demographic factors contributing to the onset of diabetes, guiding personalized healthcare interventions and resource allocation.
+
+## Part 2. Data Description and Response Variables
+
+### Data Description
+
+The business-related dataset aimed at exploring early detection of diabetes is comprehensive, encompassing observations related to individuals' health and symptoms. The primary objective is to predict the likelihood of individuals developing diabetes. Below is a detailed description:
+
+1.  Observations:
+
+-   Each observation corresponds to an individual patient or participant.
+-   The dataset is representative, capturing a diverse sample of the population. It includes individuals both with and without diabetes, providing a holistic view of early-stage diabetes risk factors.
+
+2.  Variables:
+
+    a\. Dependent Variable:
+
+    -   The dependent variable is binary, serving as the response variable indicating whether an individual has developed diabetes (1) or not (0).
+
+    b\. Independent Variables:
+
+    -   Various symptoms associated with diabetes are included, such as polyuria (excessive urination), polydipsia (excessive thirst), sudden weight loss, and more.
+
+    -   Demographic factors, such as age and gender, are also considered as independent variables.
+
+### Response Variable Description
+
+-   The response variable, also known as the dependent variable, is binary, indicating the positive or negative status for diabetes.
+
+    -   **Response Variable:**
+
+        -   Diabetes (Positive/Negative):
+
+            -   Positive: Indicates that the individual has developed diabetes.
+
+            -   Negative: Indicates that the individual has not developed diabetes.
+
+## Part 3. Data Cleaning and EDA
+
+### Data Cleaning
+
+```{r}
+#import dataset
+library(readxl)
+diabetes <- read_excel("~/Downloads/diabetes.xlsx", 
+    na = "NA")
+View(diabetes)
+```
+
+1.  Get the data summary, structure and set as data frame.
+
+```{r}
+summary(diabetes);str(diabetes)
+diabetes<-data.frame(diabetes)
+str(diabetes)
+```
+
+2.  Check and locate for missing values and duplication Duplicates are identified but they cannot be removed as the patients may have similar symptoms recorded.
+
+```{r}
+missing<-colSums(is.na(diabetes));missing
+```
+
+```{r}
+dupe<-sum(duplicated(diabetes));dupe
+```
+
+3.  Using for loop to batch convert all the variables in character into factor data type
+
+```{r}
+for (i in 2:17) {
+  diabetes[,i]<-as.factor(diabetes[,i])
+}
+str(diabetes)
+```
+
+### EDA
+
+1.  Age and Gender Distribution
+
+```{r}
+library(ggplot2)
+
+# Binning the age variable
+diabetes$Age_Group <- cut(diabetes$Age, breaks = seq(0, 100, by = 10), labels = c("1-10", "11-20", "21-30", "31-40", "41-50", "51-60", "61-70","71-80","81-90","91-100"), right = FALSE)
+
+# Plotting the Age and Gender distribution
+ggplot(diabetes, aes(x = Age_Group, fill = Gender)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Age and Gender Distribution", x = "Age Group", y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+2.  Symptoms Distribution
+
+```{r}
+library(ggplot2)
+library(reshape2)
+
+# Function to create bar plots for symptom subsets
+create_bar_plot <- function(subset_data, title) {
+  subset_data$class <- factor(subset_data$class, levels = c("Negative", "Positive"))
+  
+  # Reshape data
+  subset_data_long <- reshape2::melt(subset_data, id.vars = "class")
+  
+  # Create bar plot
+  ggplot(subset_data_long, aes(x = variable, fill = value)) +
+    geom_bar(position = "stack", stat = "count") +
+    facet_wrap(~class, scales = "free_y") +
+    labs(title = title, x = "Symptoms", y = "Count") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_fill_discrete(name="Presence of Symptom")
+}
+
+# Create bar plots for three subsets
+bar_plot1 <- create_bar_plot(subset(diabetes, select = c("Polyuria", "Polydipsia", "sudden.weight.loss", "weakness", "Polyphagia", "class")), "Symptoms Data 1")
+bar_plot2 <- create_bar_plot(subset(diabetes, select = c("Genital.thrush", "visual.blurring", "Itching", "Irritability", "delayed.healing", "class")), "Symptoms Data 2")
+bar_plot3 <- create_bar_plot(subset(diabetes, select = c("partial.paresis", "muscle.stiffness", "Alopecia", "Obesity", "class")), "Symptoms Data 3")
+
+# Print the plots
+print(bar_plot1)
+print(bar_plot2)
+print(bar_plot3)
+
+```
+
+3.  Boxplot of Age by Diabetes Class
+
+```{r}
+# Boxplot of Age by Diabetes Class
+ggplot(diabetes, aes(x = class, y = Age, fill = class)) +
+  geom_boxplot() +
+  labs(title = "Age by Diabetes Class", x = "Diabetes Class", y = "Age")
+```
+
+Summary Statistics for Age by Diabetes Class
+
+```{r}
+# Calculate mean age for positive and negative diabetes classes
+mean_age_positive <- mean(diabetes$Age[diabetes$class == "Positive"], na.rm = TRUE)
+mean_age_negative <- mean(diabetes$Age[diabetes$class == "Negative"], na.rm = TRUE)
+
+# Print the results
+cat("Mean Age for Positive Diabetes Class:", round(mean_age_positive, 2), "\n")
+cat("Mean Age for Negative Diabetes Class:", round(mean_age_negative, 2), "\n")
+
+```
+
+4.  Pie Chart for Gender by Diabetes Class
+
+```{r}
+library(ggplot2)
+
+# Create a data frame with counts of Gender by Diabetes Class
+gender_count <- table(diabetes$Gender, diabetes$class)
+gender_count_df <- as.data.frame(gender_count)
+colnames(gender_count_df) <- c("Gender", "Class", "Count")
+
+# Generate Pie Chart
+ggplot(gender_count_df, aes(x = "", y = Count, fill = Gender)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  coord_polar("y") +
+  facet_wrap(~Class) +
+  scale_fill_manual(values = c("Female" = "pink", "Male" = "blue")) +  # Adjust colors as needed
+  labs(title = "Gender Distribution by Diabetes Class", fill = "Gender") +
+  theme_void() +
+  theme(legend.position = "bottom")
+```
+
+## Part 4. Modelling Approach
+
+### Model Selection Process
+
+The GLM model, employing logistic regression for binary outcomes, began with all variables and underwent iterative refinement based on significance. The final model (model_log1) retained both significant and insignificant predictors for optimizing diabetes risk prediction. Another model (model_log2) included only significant predictors, but likelihood ratio tests favored model_log1, indicating no significant improvement from model_log2.
+
+### Model Solutions
+
+-   Optimizing Diabetes Detection: GLM models offer a data-driven approach, enhancing accuracy by incorporating symptoms and health markers through logistic regression. Coefficients' significance aids in identifying predictors contributing significantly to diabetes risk prediction.
+
+-   Enhancing Patient Stratification: GLM models facilitate patient categorization based on diabetes risk, emphasizing crucial symptoms like Polyuria and Polydipsia. Significant predictors, such as GenderMale with a negative impact on risk, guide tailored interventions, optimizing healthcare resources and improving patient outcomes.
+
+## Part 5. Output of the Final Model
+
+### Relevel Reference Level to Positive Diabetes Class
+
+In this model, 'Negative' and 'Positive' class is coded as 1 and 2, respectively, when it was converted into factor prior to building the model. The output produced is based on the factor level coded as 1 or 'Negative' class. Thus, we should relevel the reference level to 1 as 'Positive' diabetes class so that the output is based on the risk of getting diabetes is positive.
+
+```{r}
+# Specify class levels
+levels(diabetes$class) <- c("Negative", "Positive")
+
+# Change the reference level to "Positive" (1)
+diabetes$class <- relevel(diabetes$class, ref = "Positive")
+
+# Display the result
+str(diabetes$class)
+```
+
+1.  Logistic Regression/ Generalized Linear Model
+
+<!-- -->
+
+a.  With all variables
+
+```{r}
+# Run general linear regression
+diabetes$class<-as.factor(diabetes$class)
+model_log1<-glm(class~Age+Gender+Polyuria+Polydipsia+sudden.weight.loss+weakness+Polyphagia+Genital.thrush+visual.blurring+Itching+Irritability+delayed.healing+partial.paresis+muscle.stiffness+Alopecia+Obesity,data=diabetes, family = binomial)
+summary(model_log1)
+```
+
+b.  With Only Significant Variables.
+
+    The model is running with the significant variables with the asterisks as listed in the model above.
+
+```{r}
+model_log2<-glm(class~Age+Gender+Polyuria+Polydipsia+Polyphagia+Genital.thrush+Itching+Irritability+partial.paresis,data=diabetes, family = binomial)
+summary(model_log2)
+```
+
+## Part 6. Discussion of the Assumptions
+
+1.  Likelihood ratio test (ANOVA) - for comparing model
+
+```{r}
+anova(model_log1,model_log2,test = "Chisq")
+```
+
+Decision: There is no significant (p\>0.04) improvement from model 1 to model 2. Hence, we maintain to use model 1.
+
+2.  Pseudo R2
+
+```{r}
+library(pscl)
+list(Model_log1=pR2(model_log1)["McFadden"],Model_log2=pR2(model_log2)["McFadden"])
+```
+
+Decision: Model 1 (0.752) have slightly higher R2 than Model 2 (0.740). It can be considered acceptable fit.
+
+3.  The Hosmer-Lemeshow Goodness-of-Fit Test
+
+```{r}
+library(performance)
+performance_hosmer(model_log1,n_bins = 10)
+```
+
+Decision: The p-value(0.977) is not significant suggesting model seems to fit well with the data.
+
+## Part 7. Interpretations on Model Coefficient
+
+1.  Logistic Regression/ Generalized Linear Model
+
+```{r}
+summary(model_log1)
+```
+
+The Independent Variables can account for 75% (pseudo R2=0.752) of variation in getting diabetes.
+
+As seen, the variables of Age, Gender, Polyuria, Polydipsia, Polyphagia, Genital.thrush, Itching, Irritability, and partial.paresis are the significant variables with the asterisks stated.
+
+B1 = 0.051. There is significant (p\<0.05) relationship between Age and Diabetes. This indicates that an increase in Age, will increase the probability of getting diabetes.
+
+B2 = 4.351. There is significant (p\<0.00) relationship between Gender and Diabetes. The beta indicates that Male in Gender is getting higher chance of getting diabetes than Female.
+
+B3 = -4.439. There is significant (p\<0.00) relationship between Polyuria and Diabetes. This indicates that an increase in Polyuria, will decrease the probability of getting diabetes. The beta indicates the patient with Polyuria is getting higher chance of getting diabetes than No Polyuria.
+
+B4 = -5.070. There is significant (p\<0.00) relationship between Polydipsia and Diabetes. This indicates that an increase in Polydipsia, will decrease the probability of getting diabetes. The beta indicates the patient with Polydipsia is getting higher chance of getting diabetes than No Polydipsia.
+
+B5 = -0.190. There is no significant (p\>0.05) relationship between Sudden Weight Loss and Diabetes. But, the beta indicates the patient with Sudden Weight Loss is getting higher chance of getting diabetes than No Sudden Weight Loss.
+
+B6 = -0.817. There is no significant (p\>0.05) relationship between Weakness and Diabetes. But, the beta indicates the patient with Weakness is getting higher chance of getting diabetes than No Weakness.
+
+B7 = -1.193. There is significant (p\<0.05) relationship between Polyphagia and Diabetes. This indicates that an increase in Polyphagia, will decrease the probability of getting diabetes. The beta indicates the patient with Polyphagia is getting higher chance of getting diabetes than No Polyphagia.
+
+B8 = -1.863. There is significant (p\<0.00) relationship between Genital Thrush and Diabetes. This indicates that an increase in Genital Thrush, will decrease the probability of getting diabetes. The beta indicates the patient with Genital Thrush is getting higher chance of getting diabetes than No Genital Thrush.
+
+B9 = -0.915. There is no significant (p\>0.05) relationship between Visual Blurring and Diabetes. But, the beta indicates the patient with Visual Blurring is getting higher chance of getting diabetes than No Visual Blurring.
+
+B10 = 2.802. There is significant (p\<0.00) relationship between Itching and Diabetes. This indicates an increase in Itching, will increase the probability of getting diabetes. The beta indicates the patient with Itching is getting higher chance of getting diabetes than No Itching.
+
+B11 = -2.340. There is significant (p\<0.00) relationship between Irritability and Diabetes. This indicates that an increase in Irritability , will decrease the probability of getting diabetes. The beta indicates the patient with Irritability is getting higher chance of getting diabetes than No Irritability.
+
+B12 = 0.391. There is no significant (p\>0.05) relationship between Delayed Healing and Diabetes. But, the beta indicates the patient with Delayed Healing is getting higher chance of getting diabetes than No Delayed Healing.
+
+B13 = -1.159. There is significant (p\<0.05) relationship between Partial Paresis and Diabetes. This indicates that an increase in Partial Paresis, will decrease the probability of getting diabetes. The beta indicates the patient with Partial Paresis is getting higher chance of getting diabetes than No Partial Paresis.
+
+B14 = 0.728. There is no significant (p\>0.05) relationship between Muscle Stiffness and Diabetes. But, the beta indicates the patient with Muscle Stiffness is getting higher chance of getting diabetes than No Muscle Stiffness.
+
+B15 = -0.150. There is no significant (p\>0.05) relationship between Alopecia and Diabetes. But, the beta indicates the patient with Alopecia is getting higher chance of getting diabetes than No Alopecia.
+
+B16 = 0.289. There is no significant (p\>0.05) relationship between Obesity and Diabetes. But, the beta indicates the patient with Obesity is getting higher chance of getting diabetes than No Obesity.
+
+## Part 8. Additional Work
+
+Feature Importance
+
+```{r}
+library(caret)
+
+feature_importance <- varImp(model_log1, scale = FALSE)
+
+# Add row names to the data frame as a column
+feature_importance$Variable <- rownames(feature_importance)
+
+# Sort the data frame by the 'Overall' column in descending order
+ordered_feature_importance <- feature_importance[order(-feature_importance$Overall), ]
+
+# Print the ordered feature importance with the variable names
+print(ordered_feature_importance[, c("Variable", "Overall")])
+
+
+```
+
+As seen, the Gender of Male is the most influential attributes towards diabetes classes, followed by Polyuria, Polydipsia, Itching, Irritability as the top 5 influential attributes in sequence.
